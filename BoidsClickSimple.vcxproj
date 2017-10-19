@@ -151,17 +151,6 @@
     <ClCompile Include="GLSL.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\GL\freeglut.h" />
-    <ClInclude Include="..\GL\freeglut_ext.h" />
-    <ClInclude Include="..\GL\freeglut_std.h" />
-    <ClInclude Include="..\GL\gl.h" />
-    <ClInclude Include="..\GL\glew.h" />
-    <ClInclude Include="..\GL\GLSL.h" />
-    <ClInclude Include="..\GL\glu.h" />
-    <ClInclude Include="..\GL\mat.h" />
-    <ClInclude Include="..\GL\vec.h" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Lib\freeglut.dll" />
     <None Include="Lib\glew32.dll" />
     <None Include="Lib\glu32.dll" />

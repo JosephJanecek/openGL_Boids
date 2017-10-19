@@ -10,11 +10,26 @@ Version 1
 #include "GL\vec.h"
 #include "GL\GLSL.h"
 #include <vector>
+#include <list>
 using namespace std;
+
+//-------------------- Boid structure ------------------------------
+struct Boid
+{
+	vec3 velocity;
+	vec3 position;
+	Boid(vec3 p = vec3(0), vec3 v = vec3(0))
+	{
+		velocity = v;
+		position = p;
+	}
+};
+//---------------------------------------------------------------------
 
 float vertices[][3] = { {-.015f, 0, 0}, {0, .05f, 0}, {.015f, 0, 0} };
 //vector<vec3> normal;
 vector<int3> triangles;
+vector<Boid> flock;
 
 int vertexSize = sizeof(vertices);
 //int normalsSize;
@@ -23,17 +38,19 @@ GLuint vBufferID = 0;
 GLuint shaderID = 0;
 
 const float maxSpeed = .3f;
-
-vec2 mouseDown;
+mat4 transMat;
+int transID = 0;
+int change = 0;
 
 char* vertexShader = "\
 	#version 130									\n\
 	in vec3 vPos;									\n\
-	//in vec3 color;									\n\
+	//in vec3 color;								\n\
 	out vec4 oColor;								\n\
+	uniform mat4 view;								\n\
 	void main()										\n\
 	{												\n\
-		gl_Position = vec4 (vPos, 1);				\n\
+		gl_Position = view * vec4 (vPos, 1);				\n\
 		oColor = vec4(1,.5f,.2f,1);						\n\
 	}												\n\
 ";
@@ -69,20 +86,46 @@ void SetupVertexFeeder()
 
 }
 
+void mouseClick(int button, int state, int x, int y)
+{
+	switch (button)
+	{
+		case GLUT_LEFT_BUTTON:
+		{
+			if (state == GLUT_DOWN)
+			{
+				vec2 mousePos = vec2(((float)x - 450) / 450, ((float)y - 300) / -300);
+
+				Boid b(vec3(mousePos, 1));
+				flock.push_back(b);
+			}
+			break;
+		}
+		default:
+			break;
+	}
+	glutPostRedisplay();
+}
+
 void Display()
 {
+	if (!flock.empty())
+	{
+			transMat = Translate(flock[transID].position);
+			transID = (transID + 1) % flock.size();
+	}
+	else
+		change = 0;
+
+	//Clear color buffer
 	glClearColor(.3f, .3f, .3f, 1);
-	//Clear the frame buffer
 	glClear(GL_COLOR_BUFFER_BIT);
-	glClear(GL_DEPTH_BUFFER_BIT);
 
-	SetupVertexFeeder();
+	GLint viewID = glGetUniformLocation(shaderID, "view");
+	if (viewID >= 0)
+		glUniformMatrix4fv(viewID, 1, true, (float*) &transMat);
 
-	//int3 tri = { 0, 1, 2 };
-
-	triangles.push_back(int3(0,1,2));
-
-	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, &triangles[0]);
+	glDrawElements(GL_TRIANGLES, (3 * flock.size()), GL_UNSIGNED_INT, &triangles[0]);
 
 	// ensure all gl commands executed
 	glFlush();
@@ -115,8 +158,13 @@ void main(int argc, char** argv)
 	glUseProgram(shaderID);
 
 	InitVertexBuffer();
-	//glutMouseFunc(mouseButton);
+	SetupVertexFeeder();
+
+	triangles.push_back(int3(0, 1, 2));
+
+	glutMouseFunc(mouseClick);
 	//glutMotionFunc(mouseDrag);
+
 	// set GLUT display callback
 	glutDisplayFunc(Display);
 	glutCloseFunc(Close);
