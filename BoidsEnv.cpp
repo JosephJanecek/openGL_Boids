@@ -9,22 +9,14 @@ Version 1
 #include "GL\freeglut.h"
 #include "GL\vec.h"
 #include "GL\GLSL.h"
+#include "Boid.h"
 #include <vector>
 #include <list>
+#include <time.h>
 using namespace std;
 
-//-------------------- Boid structure ------------------------------
-struct Boid
-{
-	vec3 velocity;
-	vec3 position;
-	Boid(vec3 p = vec3(0), vec3 v = vec3(0))
-	{
-		velocity = v;
-		position = p;
-	}
-};
-//---------------------------------------------------------------------
+const int frameRate = 30;
+//time_t startTime = clock();
 
 float vertices[][3] = { {-.015f, 0, 0}, {0, .05f, 0}, {.015f, 0, 0} };
 //vector<vec3> normal;
@@ -96,7 +88,7 @@ void mouseClick(int button, int state, int x, int y)
 			{
 				vec2 mousePos = vec2(((float)x - 450) / 450, ((float)y - 300) / -300);
 
-				Boid b(vec3(mousePos, 1));
+				Boid b(vec3(mousePos, 1), .1f);
 				flock.push_back(b);
 			}
 			break;
@@ -107,24 +99,39 @@ void mouseClick(int button, int state, int x, int y)
 	glutPostRedisplay();
 }
 
+int timePassed = 0;
+
+void animate()
+{
+	//cout << timePassed << endl;
+	glutPostRedisplay();
+}
+
 void Display()
 {
 	//Clear color buffer
 	glClearColor(.3f, .3f, .3f, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	//Draw all boids at their respective position;
 	for (int i = 0; i < flock.size(); i++)
 	{
+		
+		if (timePassed % frameRate == 0)
+		{
+			flock[i].accelerate();
+		}
+
 		transMat = Translate(flock[i].position);
 		GLint viewID = glGetUniformLocation(shaderID, "view");
 		if (viewID >= 0)
 			glUniformMatrix4fv(viewID, 1, true, (float*)&transMat);
 
 		glDrawElements(GL_TRIANGLES, (3 * flock.size()), GL_UNSIGNED_INT, &triangles[0]);
-
-		// ensure all gl commands executed
-		glFlush();
 	}
+
+	timePassed++;
+	// ensure all gl commands executed
 	glFlush();
 }
 
@@ -164,6 +171,7 @@ void main(int argc, char** argv)
 
 	// set GLUT display callback
 	glutDisplayFunc(Display);
+	glutIdleFunc(animate);
 	glutCloseFunc(Close);
 	// no return from this event loop
 	glutMainLoop();

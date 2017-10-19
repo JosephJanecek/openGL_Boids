@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Boid.cpp" />
     <ClCompile Include="BoidsEnv.cpp" />
     <ClCompile Include="GLSL.cpp" />
   </ItemGroup>
@@ -158,6 +159,9 @@
   <ItemGroup>
     <Library Include="Lib\freeglut.lib" />
     <Library Include="Lib\glew32.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Boid.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
