@@ -109,25 +109,22 @@ void mouseClick(int button, int state, int x, int y)
 
 void Display()
 {
-	if (!flock.empty())
-	{
-			transMat = Translate(flock[transID].position);
-			transID = (transID + 1) % flock.size();
-	}
-	else
-		change = 0;
-
 	//Clear color buffer
 	glClearColor(.3f, .3f, .3f, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	GLint viewID = glGetUniformLocation(shaderID, "view");
-	if (viewID >= 0)
-		glUniformMatrix4fv(viewID, 1, true, (float*) &transMat);
+	for (int i = 0; i < flock.size(); i++)
+	{
+		transMat = Translate(flock[i].position);
+		GLint viewID = glGetUniformLocation(shaderID, "view");
+		if (viewID >= 0)
+			glUniformMatrix4fv(viewID, 1, true, (float*)&transMat);
 
-	glDrawElements(GL_TRIANGLES, (3 * flock.size()), GL_UNSIGNED_INT, &triangles[0]);
+		glDrawElements(GL_TRIANGLES, (3 * flock.size()), GL_UNSIGNED_INT, &triangles[0]);
 
-	// ensure all gl commands executed
+		// ensure all gl commands executed
+		glFlush();
+	}
 	glFlush();
 }
 
