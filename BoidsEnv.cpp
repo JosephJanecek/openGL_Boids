@@ -13,12 +13,16 @@ Version 1
 #include <vector>
 #include <list>
 #include <time.h>
+#include <stdlib.h>
+#include <cmath>
 using namespace std;
+
+#define PI 3.14159
 
 const int frameRate = 30;
 //time_t startTime = clock();
 
-float vertices[][3] = { {-.015f, 0, 0}, {0, .05f, 0}, {.015f, 0, 0} };
+float vertices[][3] = { {0, -.015f, 0}, {.05f, 0, 0}, {0, .015f, 0} };
 //vector<vec3> normal;
 vector<int3> triangles;
 vector<Boid> flock;
@@ -29,7 +33,8 @@ int vertexSize = sizeof(vertices);
 GLuint vBufferID = 0;
 GLuint shaderID = 0;
 
-const float maxSpeed = .3f;
+const float maxSpeed = .01f;
+const float avgSpeed = .005f;
 mat4 transMat;
 int transID = 0;
 int change = 0;
@@ -78,6 +83,18 @@ void SetupVertexFeeder()
 
 }
 
+//Generates a random angle for the velocity but keeps all speeds the same (avgSpeed)
+vec2 randAngle()
+{
+	vec2 v;
+	double theta = ((rand() % 200) / 100.0f) * PI;
+	
+	v.x = avgSpeed * cos(theta);
+	v.y = avgSpeed * sin(theta);
+
+	return v;
+}
+
 void mouseClick(int button, int state, int x, int y)
 {
 	switch (button)
@@ -88,7 +105,8 @@ void mouseClick(int button, int state, int x, int y)
 			{
 				vec2 mousePos = vec2(((float)x - 450) / 450, ((float)y - 300) / -300);
 
-				Boid b(vec3(mousePos, 1), .1f);
+				vec2 v = randAngle();
+				Boid b(vec3(mousePos, 1), vec3(v, 0), maxSpeed);
 				flock.push_back(b);
 			}
 			break;
@@ -103,9 +121,67 @@ int timePassed = 0;
 
 void animate()
 {
-	//cout << timePassed << endl;
 	glutPostRedisplay();
 }
+
+//-------------------------------- Boid Rules --------------------------------------------------
+//Rule 1: Cohesion
+vec3 boidCohesion(Boid b, int myIndex)
+{
+	vec3 pc = vec3(0);
+	int fSize = flock.size();
+
+	for (int i = 0; i < fSize; i++)
+	{
+		if (i != myIndex)
+		{
+			pc += flock[i].position;
+		}
+	}
+	pc /= fSize - 1;
+
+	//Move 1% closer to the flock for smother animation
+	return (pc - b.position) / 100;
+}
+
+//Rule 2: Separation
+vec3 boidSeparation(Boid b, int myIndex)
+{
+	vec3 sep = vec3(0);
+
+	for (int i = 0; i < flock.size(); i++)
+	{
+		if (i != myIndex)
+		{
+			if (abs(flock[i].position.x - b.position.x) < 100 || abs(flock[i].position.y - b.position.y) < 100)
+			{
+				sep -= flock[i].position - b.position;
+			}
+		}
+	}
+	return sep;
+}
+
+//Rule 3: Alignment
+vec3 boidAlignment(Boid b, int myIndex)
+{
+	vec3 pv = vec3(0);
+
+	int fSize = flock.size();
+
+	for (int i = 0; i < fSize; i++)
+	{
+		if (i != myIndex)
+		{
+			pv += flock[i].velocity;
+		}
+	}
+	pv /= fSize - 1;
+
+	//Add only an eight of the velocity
+	return (pv - b.velocity) / 8;
+}
+//----------------------------------------------------------------------------------------------
 
 void Display()
 {
@@ -119,10 +195,17 @@ void Display()
 		
 		if (timePassed % frameRate == 0)
 		{
+			/*
+			vec3 v1 = boidCohesion(flock[i], i);
+			vec3 v2 = boidSeparation(flock[i], i);
+			vec3 v3 = boidAlignment(flock[i], i);
+			flock[i].velocity += v1 +v2 + v3;
+			*/
 			flock[i].accelerate();
 		}
 
 		transMat = Translate(flock[i].position);
+		transMat *= flock[i].direction();
 		GLint viewID = glGetUniformLocation(shaderID, "view");
 		if (viewID >= 0)
 			glUniformMatrix4fv(viewID, 1, true, (float*)&transMat);
@@ -143,6 +226,7 @@ void Close()
 
 void main(int argc, char** argv)
 {
+	srand(time(nullptr));
 	//Initialize libraries and window
 	glutInit(&argc, argv);
 	glutInitWindowSize(900, 600);
