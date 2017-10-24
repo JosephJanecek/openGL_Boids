@@ -1,21 +1,55 @@
 #include "Boid.h"
 
-Boid::Boid(vec3 p, vec3 v, float max)
+Boid::Boid(vec3 p, vec3 v, unsigned id, float max)
 {
+	ID = id;
 	velocity = v;
 	position = p;
 	maxSpeed = max;
+	startSpeed = sqrt(v.x*v.x + v.y*v.y);
 }
 
 void Boid::accelerate()
 {
-	if (position.x >= border || position.x <= (-1 * border))
-		velocity.x *= -1;
-	if (position.y >= border || position.y <= (-1 * border))
-		velocity.y *= -1;
+	float a = .0001f;
+	float speed = 0;
 
-	position.x += velocity.x;
-	position.y += velocity.y;
+	//X boundaries
+	if (position.x >= borderX)
+		velocity.x -= a;
+	else if (position.x <= (-1 * borderX))
+		velocity.x += a;
+	else
+	{
+		speed = sqrt(velocity.x*velocity.x + velocity.y*velocity.y);
+		if (speed != startSpeed)
+		{
+			//Make vector in the same direction with desired magnatude
+			velocity = (velocity / speed) * startSpeed;
+		}
+	}
+
+	//Y boundaries
+	if (position.y >= borderY)
+		velocity.y -= a;
+	else if (position.y <= (-1 * borderY))
+		velocity.y += a;
+	else
+	{
+		speed = sqrt(velocity.x*velocity.x + velocity.y*velocity.y);
+		if (speed != startSpeed)
+		{
+			velocity = (velocity / speed) * startSpeed;
+		}
+	}
+	 /*
+	speed = sqrt(velocity.x*velocity.x + velocity.y*velocity.y);
+	if (speed > startSpeed)
+	{
+		velocity = (velocity / speed) * startSpeed;
+	}*/
+
+	position += velocity;
 }
 
 mat4 Boid::direction()

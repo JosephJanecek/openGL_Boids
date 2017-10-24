@@ -6,12 +6,23 @@
 class Boid
 {
 private:
-	const float border = .95f;
+	const float borderX = .90f;
+	const float borderY = .80f;
+	unsigned int ID;
+	float startSpeed;
 	float maxSpeed;
 public:
 	vec3 velocity;
 	vec3 position;
-	Boid(vec3 p, vec3 v, float max = 0.005);
+	Boid(vec3 p, vec3 v, unsigned id, float max = 0.005);
+	bool operator==(const Boid &b)
+	{
+		return ID == b.ID;
+	}
+	bool operator!=(const Boid &b)
+	{
+		return ID != b.ID;
+	}
 
 	//Moves the boid by it's velocity
 	void accelerate();

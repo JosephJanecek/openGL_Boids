@@ -95,19 +95,24 @@ vec2 randAngle()
 	return v;
 }
 
+unsigned boidID = 0;
+
 void mouseClick(int button, int state, int x, int y)
 {
+	int winCentW = glutGet(GLUT_WINDOW_WIDTH) / 2;
+	int winCentH = glutGet(GLUT_WINDOW_HEIGHT) / 2;
 	switch (button)
 	{
 		case GLUT_LEFT_BUTTON:
 		{
-			if (state == GLUT_DOWN)
+			if (state == GLUT_DOWN && flock.size() <= 50)
 			{
-				vec2 mousePos = vec2(((float)x - 450) / 450, ((float)y - 300) / -300);
+				vec2 mousePos = vec2(((float)x - winCentW) / winCentW, ((float)y - winCentH) / -winCentH);
 
 				vec2 v = randAngle();
-				Boid b(vec3(mousePos, 1), vec3(v, 0), maxSpeed);
+				Boid b(vec3(mousePos, 1), vec3(v, 0), boidID, maxSpeed);
 				flock.push_back(b);
+				boidID++;
 			}
 			break;
 		}
@@ -126,36 +131,41 @@ void animate()
 
 //-------------------------------- Boid Rules --------------------------------------------------
 //Rule 1: Cohesion
-vec3 boidCohesion(Boid b, int myIndex)
+vec3 boidCohesion(Boid b)//, int myIndex)
 {
 	vec3 pc = vec3(0);
 	int fSize = flock.size();
 
 	for (int i = 0; i < fSize; i++)
 	{
-		if (i != myIndex)
+		if (flock[i] != b)
 		{
 			pc += flock[i].position;
 		}
 	}
-	pc /= fSize - 1;
 
-	//Move 1% closer to the flock for smother animation
-	return (pc - b.position) / 100;
+	if (fSize > 1)
+		pc /= fSize - 1;
+
+	//Move % closer to the flock for smother animation
+	return (pc - b.position) / 10000;
 }
 
 //Rule 2: Separation
-vec3 boidSeparation(Boid b, int myIndex)
+vec3 boidSeparation(Boid b)//, int myIndex)
 {
 	vec3 sep = vec3(0);
-
 	for (int i = 0; i < flock.size(); i++)
 	{
-		if (i != myIndex)
+		if (flock[i] != b)
 		{
-			if (abs(flock[i].position.x - b.position.x) < 100 || abs(flock[i].position.y - b.position.y) < 100)
+			if (abs(flock[i].position.x - b.position.x) < .002f)
 			{
-				sep -= flock[i].position - b.position;
+				sep.x -= flock[i].position.x - b.position.x;
+			}
+			else if (abs(flock[i].position.y - b.position.y) < .002f)
+			{
+				sep.y -= flock[i].position.y - b.position.y;
 			}
 		}
 	}
@@ -163,7 +173,7 @@ vec3 boidSeparation(Boid b, int myIndex)
 }
 
 //Rule 3: Alignment
-vec3 boidAlignment(Boid b, int myIndex)
+vec3 boidAlignment(Boid b)//, int myIndex)
 {
 	vec3 pv = vec3(0);
 
@@ -171,15 +181,17 @@ vec3 boidAlignment(Boid b, int myIndex)
 
 	for (int i = 0; i < fSize; i++)
 	{
-		if (i != myIndex)
+		if (flock[i] != b)
 		{
 			pv += flock[i].velocity;
 		}
 	}
-	pv /= fSize - 1;
 
-	//Add only an eight of the velocity
-	return (pv - b.velocity) / 8;
+	if (fSize > 1)
+		pv /= fSize - 1;
+
+	//Add only a portion so that alignment is more natural
+	return (pv - b.velocity) / 55;
 }
 //----------------------------------------------------------------------------------------------
 
@@ -195,12 +207,13 @@ void Display()
 		
 		if (timePassed % frameRate == 0)
 		{
-			/*
-			vec3 v1 = boidCohesion(flock[i], i);
-			vec3 v2 = boidSeparation(flock[i], i);
-			vec3 v3 = boidAlignment(flock[i], i);
-			flock[i].velocity += v1 +v2 + v3;
-			*/
+			if (flock.size() > 1)
+			{
+				vec3 v1 = boidCohesion(flock[i]);
+				vec3 v2 = boidSeparation(flock[i]);
+				vec3 v3 = boidAlignment(flock[i]);
+				flock[i].velocity += v1 + v2 + v3;
+			}
 			flock[i].accelerate();
 		}
 
